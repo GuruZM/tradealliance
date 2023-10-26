@@ -39,7 +39,7 @@ const INITIAL_VISIBLE_COLUMNS = ["name", "role", "status", "actions"];
 type User = typeof users[0];
 
 
-function page() {
+function Page() {
 
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
@@ -335,4 +335,4 @@ function page() {
   )
 }
 
-export default page
+export default Page
