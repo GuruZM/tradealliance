@@ -8,6 +8,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Tooltip,
   Input,
   Button,
   DropdownTrigger,
@@ -19,14 +20,22 @@ import {
   Pagination,
   Selection,
   ChipProps,
-  SortDescriptor
+  SortDescriptor,
+  useDisclosure,
+  Divider,
+ 
 } from "@nextui-org/react";
+import Model from '../components/Model';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { VerticalDotsIcon } from '../components/icons/VerticalDotsIcon';
 import { ChevronDownIcon } from '../components/icons/ChevronDownIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import { CustomerColumns,users, statusOptions } from '../utils/tableStructure/columns';
 import { capitalize } from '../utils/text/capitalize';
+import { useForm,  Controller, set,  } from 'react-hook-form';
+import { db } from '../utils/firebase/firebase_initialization';
+import { collection, addDoc } from "firebase/firestore"; 
+import { toast } from 'react-toastify';
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
   active: "success",
@@ -41,6 +50,8 @@ type User = typeof users[0];
 
 function Page() {
 
+  
+  const {isOpen, onOpen, onOpenChange} = useDisclosure();
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -233,9 +244,20 @@ function Page() {
                 ))}
               </DropdownMenu>
             </Dropdown>
-            <Button color="primary" endContent={<PlusIcon />}>
+            <Tooltip
+      content={
+        <div className="px-1 py-2">
+          <div className="text-small font-bold">Create Category</div>
+          <div className="text-tiny">Click here to create a new category</div>
+        </div>
+      }
+    >
+            <Button 
+            onPress={onOpen}
+            color="primary" endContent={<PlusIcon />}>
               Add New
             </Button>
+            </Tooltip>
           </div>
         </div>
         <div className="flex justify-between items-center">
@@ -293,10 +315,35 @@ function Page() {
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
+  const { register,reset, handleSubmit, getValues} = useForm<{name:String}>();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+
+  
+  const onSubmit = async (data:{name : String}) => {
+    setIsSubmitting(true);
+
+    try {
+      
+      const docRef = await addDoc(collection(db, "categories"), {
+        name: data.name
+      }); 
+      // Reset the form after successful submission.
+      setIsSubmitting(false);
+      reset();
+      toast.success("Category added successfully!");
+    } catch (error) {
+      setIsSubmitting(false);
+      console.error(error);
+      toast.error("Error adding category. Please try again later.");
+    }
+  };
+
   return (
     <AdminLayout>
+     
         <Table
-      aria-label="Example table with custom cells, pagination and sorting"
+      aria-label=""
       isHeaderSticky
       bottomContent={bottomContent}
       bottomContentPlacement="outside"
@@ -330,7 +377,48 @@ function Page() {
         )}
       </TableBody>
     </Table>
+          {/* model */}
 
+            
+
+          
+
+            <Model onOpenChange={onOpenChange} isOpen={isOpen} isSubmitting={isSubmitting}>
+            
+           
+            <form onSubmit={handleSubmit(onSubmit)}>
+            <Input
+                  autoFocus
+                  labelPlacement='outside'
+                  label="Category"
+                  placeholder="e.g fertilizer"
+                  variant="bordered"
+                  {...register('name', { required: true })}
+                />
+                  <Divider className='my-5'/>
+                <div className="buttonSection flex  justify-end gap-1">
+                  <Button 
+                
+                color="danger" variant="flat"  onPress={()=>{
+                  reset()
+                  onOpenChange()  
+                }}>
+                  Close
+                </Button>
+
+                <Button 
+                isLoading={isSubmitting}
+                type='submit'
+                color="primary" >
+                 Submit
+                </Button>
+            </div>
+            </form>
+
+            
+           
+            </Model>
+          {/* end model */}
     </AdminLayout>
   )
 }

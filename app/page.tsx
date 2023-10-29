@@ -1,23 +1,55 @@
 'use client'
+
+
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import {Input} from "@nextui-org/react";
 import { MailIcon } from './components/icons/MailIcon';
 import { EyeFilledIcon } from './components/icons/EyeFilledIcon';
 import { EyeSlashFilledIcon } from './components/icons/EyeSlashFilledIcon';
+import { useForm,  Controller, set,  } from 'react-hook-form';
+import { LoginType } from './types/types'
+import { signIn } from 'next-auth/react'
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './utils/firebase/firebase_initialization';
+import {toast} from 'react-toastify'
+import { redirect} from 'next/navigation'
+import { Button } from '@nextui-org/react';
+
 
 
 export default function Home() {
-
+  const { register, handleSubmit, getValues} = useForm<LoginType>();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
+
 
   const [isVisible, setIsVisible] = React.useState(false);
   const toggleVisibility = () => setIsVisible(!isVisible);
+
   
-  const submit = () => {
-    router.push('/dashboard');
+ 
+  const onSubmit = async (data : LoginType)  => {
+    setIsSubmitting(true);
+    try {
+      const { email, password } = data;
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setIsSubmitting(false);
+      router.push('/dashboard');
+    } catch (error : any) {
+    
+      if (error.code  === 'auth/invalid-login-credentials') { 
+        setIsSubmitting(false);
+        toast.error('Invalid Login Credentials',{
+        draggable:true,
+          position:'top-right'
+        })
+    }
+    }
   };
 
+  
+  
   return (
     <main className='h-screen flex justify-center items-center'>
       <div className="flex w-full justify-center max-w-sm mx-auto overflow-hidden bg-white rounded-lg shadow-lg dark:bg-gray-800 lg:max-w-4xl">
@@ -39,7 +71,7 @@ export default function Home() {
 
             <span className="w-1/5 border-b dark:border-gray-400 lg:w-1/4"></span>
           </div>
-
+          <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mt-10">
             {/* <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-200" htmlFor="LoggingEmailAddress">Email Address</label> */}
             <Input
@@ -50,7 +82,7 @@ export default function Home() {
               endContent={
                 <MailIcon className="text-2xl text-default-400 pointer-events-none flex-shrink-0" />
               }
-               
+               {...register("email", { required: true })}
             />
             {/* <input id="LoggingEmailAddress" className="block w-full px-4 py-2 text-gray-700 bg-white border rounded-lg dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 focus:border-blue-400 focus:ring-opacity-40 dark:focus:border-blue-300 focus:outline-none focus:ring focus:ring-blue-300" type="email" /> */}
           </div>
@@ -64,7 +96,7 @@ export default function Home() {
       key="outside"
       label="Password"
       labelPlacement="outside"     
-     
+     {...register("password", { required: true })}
       endContent={
         <button className="focus:outline-none" type="button" onClick={toggleVisibility}>
           {isVisible ? (
@@ -81,11 +113,15 @@ export default function Home() {
           </div>
 
           <div className="mt-6">
-            <button className="w-full px-6 py-3 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-gray-800 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-300 focus:ring-opacity-50" onClick={submit}>
+             
+            <Button 
+            className='w-full px-6 py-3 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-gray-800 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-300 focus:ring-opacity-50'
+             type='submit'
+            color="primary" isLoading={isSubmitting} >
               Sign In
-            </button>
+            </Button>
           </div>
-
+          </form>
           <div className="flex items-center justify-center mt-4">
             <p className='text-sm'>
               Crafted By Resonantt 😎

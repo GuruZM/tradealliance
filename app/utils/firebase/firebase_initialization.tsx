@@ -1,8 +1,11 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { initializeApp,getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
- 
- 
+import {getAuth,Auth} from 'firebase/auth'
+import {getFirestore} from 'firebase/firestore'
+import {getStorage} from 'firebase/storage'
+
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
@@ -13,6 +16,16 @@ const firebaseConfig = {
   measurementId:process.env.NEXT_PUBLIC_MEASUREMENT_ID
 };
 
+
+
+let app : any;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (e) {
+  app = getApp();
+}
  
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+export { app };
+export const auth : Auth = getAuth(app)
+export const storage = getStorage(app)
+export const db = getFirestore(app)

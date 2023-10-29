@@ -1,14 +1,6 @@
-// import { useLocation } from 'react-router-dom';
-// import Button from '@material-tailwind/react/Button';
- 
+import { signOut } from 'firebase/auth';
+import { auth } from '../utils/firebase/firebase_initialization';
 import {Dropdown, Button, DropdownTrigger, DropdownMenu, DropdownItem, Avatar, User} from "@nextui-org/react";
-
-// import Icon from '@material-tailwind/react/Icon';
-// import NavbarInput from '@material-tailwind/react/NavbarInput';
-// import Image from '@material-tailwind/react/Image';
-// import Dropdown from '@material-tailwind/react/Dropdown';
-// import DropdownItem from '@material-tailwind/react/DropdownItem';
-// import ProfilePicture from 'assets/img/team-1-800x800.jpg';
 
 type SidebarProps = {
     showSidebar: string;
@@ -16,7 +8,8 @@ type SidebarProps = {
 }
 
 export default function AdminNavbar({ showSidebar, setShowSidebar } : SidebarProps) {
-    // const location = useLocation().pathname;
+   
+  
 
     return (
         <nav className="bg-light-blue-500 md:ml-64 py-6 px-3">
@@ -65,21 +58,26 @@ export default function AdminNavbar({ showSidebar, setShowSidebar } : SidebarPro
               src: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
             }}
             className="transition-transform"
-            description="@tonyreichert"
-            name="Tony Reichert"
+            description={auth.currentUser && auth.currentUser.email}
+            name={auth.currentUser && auth.currentUser.displayName}
           />
         </DropdownTrigger>
         <DropdownMenu aria-label="User Actions" variant="flat">
           <DropdownItem key="profile" className="h-14 gap-2">
             <p className="font-bold">Signed in as</p>
-            <p className="font-bold">@tonyreichert</p>
+            <p className="font-bold">{auth.currentUser && auth.currentUser.email}</p>
           </DropdownItem>
           <DropdownItem key="settings">
             My Profile
           </DropdownItem>
  
-          <DropdownItem key="analytics">
-            Logout
+          <DropdownItem 
+          onClick={() => signOut(auth).then(() => {
+            console.log('sign out');        
+          })}
+
+          key="signout">
+           Sign Out
           </DropdownItem>
            
         </DropdownMenu>

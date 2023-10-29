@@ -1,13 +1,39 @@
+'use client'
+import react,{use, useEffect} from 'react';  
 // import StatusCard from 'components/StatusCard';
 // import ChartLine from 'components/ChartLine';
 // import ChartBar from 'components/ChartBar';
 // import PageVisitsCard from 'components/PageVisitsCard';
 // import TrafficCard from 'components/TrafficCard';
-
+import { useRouter } from 'next/navigation';
 import AdminLayout from "../layout/AdminLayout";
 import StatusCard from "../components/StatusCard";
+import { SpinnerIcon } from '../components/icons/Spinner';
+import {  onAuthStateChanged } from "firebase/auth";
+import { auth  } from "../utils/firebase/firebase_initialization";
 
-export default function Dashboard() {
+import { useDispatch,useSelector } from 'react-redux'; 
+
+export default async function Dashboard() {
+
+
+   const  router  = useRouter();
+
+  useEffect(() => {
+   onAuthStateChanged(auth, (user) => {             
+        if (!user) {
+           router.push('/')
+        } else 
+        { 
+
+        }
+      });
+
+  })
+
+  
+
+
     return (
         <>
         <AdminLayout>
@@ -55,7 +81,11 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* model */}
+ 
             </AdminLayout>
         </>
     );
 }
+ 
