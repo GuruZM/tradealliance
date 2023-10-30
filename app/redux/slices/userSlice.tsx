@@ -12,33 +12,6 @@ import { useDispatch } from 'react-redux';
 export const fetchUser : UserTypes = createAsyncThunk('user/fetchAll', async () => { 
     try {
 
-        // return  new  Promise((resolve) => {
-        //     onAuthStateChanged(auth, (user) => {
-        //       console.log('onAuthStateChanged callback - user:', user);
-              
-        //       if (user) {
-        //           console.log('user is  logged in ');
-        //         resolve(user); // User is authenticated
-        //       } else {
-        //           console.log('user is not logged in');
-        //         resolve(false); // User is not authenticated
-        //       }
-        //     });
-        //   });
-        // let value = false
-        // onAuthStateChanged(auth, (user : UserTypes) => {
-        //     if (!user) {
-        //       return null
-              
-        //     }
-        //     {
-        //         console.log(user);
-        //         value = true
-        //         return user               
-        //     }
-        // })
-        // console.log('value is ',value);
-
     } catch (error) {
         console.log
       throw error; 

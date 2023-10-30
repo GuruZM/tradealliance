@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { use,useEffect } from 'react'
 import AdminLayout from '../layout/AdminLayout'
 import {
   Table,
@@ -23,6 +23,7 @@ import {
   SortDescriptor,
   useDisclosure,
   Divider,
+  Spinner
  
 } from "@nextui-org/react";
 import Model from '../components/Model';
@@ -30,12 +31,16 @@ import { PlusIcon } from '../components/icons/PlusIcon';
 import { VerticalDotsIcon } from '../components/icons/VerticalDotsIcon';
 import { ChevronDownIcon } from '../components/icons/ChevronDownIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
-import { CustomerColumns,users, statusOptions } from '../utils/tableStructure/columns';
+import { categoryColumns,users, statusOptions } from '../utils/tableStructure/columns';
 import { capitalize } from '../utils/text/capitalize';
 import { useForm,  Controller, set,  } from 'react-hook-form';
 import { db } from '../utils/firebase/firebase_initialization';
 import { collection, addDoc } from "firebase/firestore"; 
 import { toast } from 'react-toastify';
+import { fetchCategories } from '../redux/slices/categorySlice';
+import { useSelector,useDispatch } from 'react-redux';
+
+
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
   active: "success",
@@ -43,9 +48,10 @@ const statusColorMap: Record<string, ChipProps["color"]> = {
   vacation: "warning",
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "role", "status", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["name","actions"];
 
-type User = typeof users[0];
+// type User = typeof users[0];
+
 
 
 function Page() {
@@ -62,32 +68,42 @@ function Page() {
     direction: "ascending",
   });
 
+
+  const dispatch = useDispatch();
+  const categories = useSelector((state : any) => state.categories.categories);
+  const status = useSelector((state : any) => state.categories.status);
+   
+
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
   const [page, setPage] = React.useState(1);
 
   const hasSearchFilter = Boolean(filterValue);
 
   const headerColumns = React.useMemo(() => {
-    if (visibleColumns === "all") return CustomerColumns;
+    if (visibleColumns === "all") return categoryColumns;
 
-    return CustomerColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+    return categoryColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredUsers = [...users];
+    let filteredCategories = [...categories];
 
     if (hasSearchFilter) {
-      filteredUsers = filteredUsers.filter((user) =>
-        user.name.toLowerCase().includes(filterValue.toLowerCase()),
+      filteredCategories = filteredCategories.filter((category) =>
+        category.name.toLowerCase().includes(filterValue.toLowerCase()),
       );
     }
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      filteredUsers = filteredUsers.filter((user) =>
-        Array.from(statusFilter).includes(user.status),
+      filteredCategories = filteredCategories.filter((category) =>
+        Array.from(statusFilter).includes(category.status),
       );
     }
 
-    return filteredUsers;
-  }, [users, filterValue, statusFilter]);
+    return filteredCategories;
+  }, [categories, filterValue, statusFilter]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -99,42 +115,30 @@ function Page() {
   }, [page, filteredItems, rowsPerPage]);
 
   const sortedItems = React.useMemo(() => {
-    return [...items].sort((a: User, b: User) => {
-      const first = a[sortDescriptor.column as keyof User] as number;
-      const second = b[sortDescriptor.column as keyof User] as number;
+    return [...items].sort((a: any, b: any) => {
+      const first = a[sortDescriptor.column as keyof any] as number;
+      const second = b[sortDescriptor.column as keyof any] as number;
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
   }, [sortDescriptor, items]);
 
-  const renderCell = React.useCallback((user: User, columnKey: React.Key) => {
-    const cellValue = user[columnKey as keyof User];
+  const renderCell = React.useCallback((category: any, columnKey: React.Key) => {
+    const cellValue = category[columnKey as keyof any];
 
     switch (columnKey) {
       case "name":
         return (
           <User
-            avatarProps={{radius: "lg", src: user.avatar}}
-            description={user.email}
+            avatarProps={{radius: "lg", src: category.avatar}}
+            description={category.email}
             name={cellValue}
           >
-            {user.email}
+            {category.email}
           </User>
         );
-      case "role":
-        return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{cellValue}</p>
-            <p className="text-bold text-tiny capitalize text-default-400">{user.team}</p>
-          </div>
-        );
-      case "status":
-        return (
-          <Chip className="capitalize" color={statusColorMap[user.status]} size="sm" variant="flat">
-            {cellValue}
-          </Chip>
-        );
+    
       case "actions":
         return (
           <div className="relative flex justify-end items-center gap-2">
@@ -202,7 +206,7 @@ function Page() {
             onValueChange={onSearchChange}
           />
           <div className="flex gap-3">
-            <Dropdown>
+            {/* <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
                   Status
@@ -222,7 +226,7 @@ function Page() {
                   </DropdownItem>
                 ))}
               </DropdownMenu>
-            </Dropdown>
+            </Dropdown> */}
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
@@ -237,7 +241,7 @@ function Page() {
                 selectionMode="multiple"
                 onSelectionChange={setVisibleColumns}
               >
-                {CustomerColumns.map((column) => (
+                {categoryColumns.map((column) => (
                   <DropdownItem key={column.uid} className="capitalize">
                     {capitalize(column.name)}
                   </DropdownItem>
@@ -261,7 +265,7 @@ function Page() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {users.length} users</span>
+          <span className="text-default-400 text-small">Total {categories.length} Categories</span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
@@ -282,7 +286,7 @@ function Page() {
     visibleColumns,
     onSearchChange,
     onRowsPerPageChange,
-    users.length,
+    categories.length,
     hasSearchFilter,
   ]);
 
@@ -330,7 +334,9 @@ function Page() {
       }); 
       // Reset the form after successful submission.
       setIsSubmitting(false);
+      dispatch(fetchCategories())
       reset();
+      onOpenChange();
       toast.success("Category added successfully!");
     } catch (error) {
       setIsSubmitting(false);
@@ -369,7 +375,7 @@ function Page() {
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
+      <TableBody isLoading={status=="loading"? true: false}  loadingContent={<Spinner label="Loading..." />} emptyContent={status === 'loading'? " " : sortedItems.length == 0 ? " No Categories Found": " "}  items={sortedItems}>
         {(item) => (
           <TableRow key={item.id}>
             {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -379,13 +385,7 @@ function Page() {
     </Table>
           {/* model */}
 
-            
-
-          
-
-            <Model onOpenChange={onOpenChange} isOpen={isOpen} isSubmitting={isSubmitting}>
-            
-           
+            <Model onOpenChange={onOpenChange} isOpen={isOpen} isSubmitting={isSubmitting}>                
             <form onSubmit={handleSubmit(onSubmit)}>
             <Input
                   autoFocus
@@ -413,10 +413,7 @@ function Page() {
                  Submit
                 </Button>
             </div>
-            </form>
-
-            
-           
+            </form>     
             </Model>
           {/* end model */}
     </AdminLayout>
