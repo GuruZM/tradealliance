@@ -1,6 +1,9 @@
 import { signOut } from 'firebase/auth';
 import { auth } from '../utils/firebase/firebase_initialization';
 import {Dropdown, Button, DropdownTrigger, DropdownMenu, DropdownItem, Avatar, User} from "@nextui-org/react";
+import { useRouter } from 'next/navigation';
+
+
 
 type SidebarProps = {
     showSidebar: string;
@@ -9,7 +12,7 @@ type SidebarProps = {
 
 export default function AdminNavbar({ showSidebar, setShowSidebar } : SidebarProps) {
    
-  
+  const router = useRouter();
 
     return (
         <nav className="bg-light-blue-500 md:ml-64 py-6 px-3">
@@ -73,7 +76,7 @@ export default function AdminNavbar({ showSidebar, setShowSidebar } : SidebarPro
  
           <DropdownItem 
           onClick={() => signOut(auth).then(() => {
-            console.log('sign out');        
+            router.push('/');
           })}
 
           key="signout">
