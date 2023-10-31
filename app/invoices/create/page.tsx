@@ -12,10 +12,11 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { collection, addDoc } from "firebase/firestore"; 
 import { toast } from 'react-toastify';
 import { db } from "@/app/utils/firebase/firebase_initialization";
+import { useRouter } from "next/navigation";
 
 function Create() {
   const dispatch = useDispatch();
-
+    const router = useRouter(); 
   const type = "create";
 
 
@@ -105,10 +106,12 @@ const onSubmit = async (data : any) => {
         transport: data.transport,
         line_items: data.items,
         invoice_total: data.invoiceTotal,
+        status: "pending",
       }); 
        
       setIsSubmitting(false);
       reset();
+      router.push('/invoices');
       toast.success("Invoice Created Successfully!");
     } catch (error) {
       setIsSubmitting(false);
@@ -253,8 +256,7 @@ const onSubmit = async (data : any) => {
                 handleRemove={handleRemove}
                 handlePriceChange={handlePriceChange}
                 key={index}
-                getValues={getValues}
-                
+                getValues={getValues}            
                 control={form.control}
                 handleQuantityChange={handleQuantityChange}
                 index={index}

@@ -40,6 +40,7 @@ import {
   import { useSelector,useDispatch } from 'react-redux';
   import { fetchCategories } from '../redux/slices/categorySlice';
   import { fetchProducts } from '../redux/slices/productSlice';
+ import { fetchSuppliers } from '../redux/slices/supplierSlice';
   
   const statusColorMap: Record<string, ChipProps["color"]> = {
     active: "success",
@@ -68,8 +69,10 @@ function Page() {
     const dispatch = useDispatch()
     const {categories} = useSelector((state:any)=>state.categories)
     const { status, products } = useSelector((state:any)=>state.products)
+    const { suppliers } = useSelector((state:any)=>state.suppliers)
 
     useEffect(() => {
+      dispatch(fetchSuppliers())
       dispatch(fetchCategories())
       dispatch(fetchProducts())
     }, [])
@@ -446,10 +449,14 @@ function Page() {
               placeholder="Select Supplier"
               {...register('supplier', { required: true })}
             >
-             
-                <SelectItem key="tradekings">
-                  Tradekings
-                </SelectItem>
+             {
+                    suppliers.map((supplier: any) => (
+                        <SelectItem key={supplier.name} value={supplier.name}>
+                        {supplier.name}
+                        </SelectItem>
+                    ))
+             }
+           
                
             </Select>
 

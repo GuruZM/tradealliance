@@ -29,10 +29,15 @@ const customerColumns = [
   {name: "ACTIONS", uid: "actions"},
 ];
 
+ 
+
 const invoiceColumns = [
   {name: "ID", uid: "id", sortable: true},
-  {name: "INVOICE NUMBER", uid: "name", sortable: true},
-  {name: "CUSTOMER", uid: "name", sortable: true},
+  {name: "INVOICE NUMBER", uid: "invoice_number", sortable: true},
+  {name: "CUSTOMER", uid: "customer_name", sortable: true},
+  {name: "DATE", uid: "date", sortable: true},
+  {name: "INVOICE TOTAL", uid: "invoice_total", sortable: true},
+  {name: "STATUS", uid: "status", sortable: true},
   {name: "ACTIONS", uid: "actions"},
 ];
 

@@ -27,13 +27,13 @@ import { PlusIcon } from '../components/icons/PlusIcon';
 import { VerticalDotsIcon } from '../components/icons/VerticalDotsIcon';
 import { ChevronDownIcon } from '../components/icons/ChevronDownIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
-import { customerColumns,users, statusOptions } from '../utils/tableStructure/columns';
+import { invoiceColumns,users, statusOptions } from '../utils/tableStructure/columns';
 import { capitalize } from '../utils/text/capitalize';
 import AdminLayout from '../layout/AdminLayout';
 import Model from '../components/Model';
 import { toast } from 'react-toastify';
 import { useSelector,useDispatch } from 'react-redux';
-import { fetchCustomers } from '../redux/slices/customerSlice'; 
+import { fetchInvoice } from '../redux/slices/invoiceSlice'; 
 import { useForm,  Controller, set,  } from 'react-hook-form';
 import { db } from '../utils/firebase/firebase_initialization';
 import { collection, addDoc } from "firebase/firestore";
@@ -45,7 +45,7 @@ const statusColorMap: Record<string, ChipProps["color"]> = {
     vacation: "warning",
   };
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "contact", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["invoice_number", "customer_name", "date","invoice_total", "status", "actions"];
 
 type User = typeof users[0];
 
@@ -53,10 +53,10 @@ function Page() {
 
   const dispatch = useDispatch()
   useEffect(()=>{
-    dispatch(fetchCustomers())
+    dispatch(fetchInvoice())
   },[dispatch])
 
-  const {customers,status} = useSelector((state: any) => state.customers)
+  const {status, invoices} = useSelector((state : any) => state.invoices)
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
   const [filterValue, setFilterValue] = React.useState("");
@@ -74,27 +74,27 @@ function Page() {
   const hasSearchFilter = Boolean(filterValue);
 
   const headerColumns = React.useMemo(() => {
-    if (visibleColumns === "all") return customerColumns;
+    if (visibleColumns === "all") return invoiceColumns;
 
-    return customerColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+    return invoiceColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredCustomers = [...customers];
+    let filteredInvoice = [...invoices];
 
     if (hasSearchFilter) {
-      filteredCustomers = filteredCustomers.filter((customer) =>
-        customer.name.toLowerCase().includes(filterValue.toLowerCase()),
+      filteredInvoice = filteredInvoice.filter((invoice) =>
+        invoice.invoice_number.toLowerCase().includes(filterValue.toLowerCase()),
       );
     }
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      filteredCustomers = filteredCustomers.filter((customer) =>
-        Array.from(statusFilter).includes(customer.status),
+      filteredInvoice = filteredInvoice.filter((invoice) =>
+        Array.from(statusFilter).includes(invoice.status),
       );
     }
 
-    return filteredCustomers;
-  }, [customers, filterValue, statusFilter]);
+    return filteredInvoice;
+  }, [invoices, filterValue, statusFilter]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -115,25 +115,48 @@ function Page() {
     });
   }, [sortDescriptor, items]);
 
-  const renderCell = React.useCallback((customer: any, columnKey: React.Key) => {
-    const cellValue = customer[columnKey as keyof any];
+  const renderCell = React.useCallback((invoice: any, columnKey: React.Key) => {
+    const cellValue = invoice[columnKey as keyof any];
+   
 
     switch (columnKey) {
-      case "name":
+      case "invoice_number":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{cellValue}</p>
-            {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.name}</p> */}
+            <p className="text-bold text-small capitalize">#{cellValue}</p>
+            {/* <p className="text-bold text-tiny capitalize text-default-400">{invoice.invoice_number}</p> */}
           </div>
         );
-      case "contact":
+      case "customer_name":
         return (
           <div className="flex flex-col">
             <p className="text-bold text-small capitalize">{cellValue}</p>
             {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.contact}</p> */}
           </div>
         );
+        case "date":
+          return (
+            <div className="flex flex-col">
+              <p className="text-bold text-small capitalize">{cellValue}</p>
+              {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.contact}</p> */}
+            </div>
+          );
      
+          case "invoice_total":
+            return (
+              <div className="flex flex-col">
+                <p className="text-bold text-small capitalize">K{cellValue}</p>
+                {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.contact}</p> */}
+              </div>
+            );
+
+            case "status":
+              return (
+                <div className="flex flex-col">
+                  <p className="text-bold text-small capitalize">{cellValue}</p>
+                  {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.contact}</p> */}
+                </div>
+              );
       case "actions":
         return (
           <div className="relative flex justify-end items-center gap-2">
@@ -144,8 +167,12 @@ function Page() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem>View</DropdownItem>
-                <DropdownItem>Edit</DropdownItem>
+                <DropdownItem>
+                  <Link href={`/invoices/${invoice.invoice_number}`} >
+                  View
+                </Link>
+                </DropdownItem>
+                {/* <DropdownItem>Edit</DropdownItem> */}
                 <DropdownItem>Delete</DropdownItem>
               </DropdownMenu>
             </Dropdown>
@@ -194,14 +221,14 @@ function Page() {
           <Input
             isClearable
             className="w-full sm:max-w-[44%]"
-            placeholder="Search by name..."
+            placeholder="Search by number..."
             startContent={<SearchIcon />}
             value={filterValue}
             onClear={() => onClear()}
             onValueChange={onSearchChange}
           />
           <div className="flex gap-3">
-            {/* <Dropdown>
+            <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
                   Status
@@ -221,7 +248,7 @@ function Page() {
                   </DropdownItem>
                 ))}
               </DropdownMenu>
-            </Dropdown> */}
+            </Dropdown>
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
@@ -236,7 +263,7 @@ function Page() {
                 selectionMode="multiple"
                 onSelectionChange={setVisibleColumns}
               >
-                {customerColumns.map((column) => (
+                {invoiceColumns.map((column) => (
                   <DropdownItem key={column.uid} className="capitalize">
                     {capitalize(column.name)}
                   </DropdownItem>
@@ -308,32 +335,10 @@ function Page() {
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
-  const { register,reset, handleSubmit, getValues} = useForm<any>();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+ 
 
 
-  const onSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    console.log('data :',data);
-    try {
-      
-      const docRef = await addDoc(collection(db, "customers"), {
-        name: data.name,
-        contact: data.contact, // Corrected property name
-      }); 
-       
-      setIsSubmitting(false);
-      dispatch(fetchCustomers())
-      reset();
-      onOpenChange();
-      toast.success("Customer added successfully!");
-    } catch (error) {
-      setIsSubmitting(false);
-      console.error(error);
-      toast.error("Error adding Customer. Please try again later.");
-    }
-  };
-
+  
 
   return (
     <AdminLayout>
@@ -364,7 +369,7 @@ function Page() {
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody isLoading={status=="loading"? true: false}   loadingContent={<Spinner label="Loading..." />} emptyContent={status === 'loading'? " " : sortedItems.length == 0 ? " No Customers Found": " "}  items={sortedItems}>
+      <TableBody isLoading={status=="loading"? true: false}   loadingContent={<Spinner label="Loading..." />} emptyContent={status === 'loading'? " " : sortedItems.length == 0 ? " No Invoices Found": " "}  items={sortedItems}>
         {(item) => (
           <TableRow key={item.id}>
             {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -372,49 +377,6 @@ function Page() {
         )}
       </TableBody>
     </Table>
-
-
-    <Model onOpenChange={onOpenChange} isOpen={isOpen} title="Add Supplier" isSubmitting={isSubmitting}>                
-            <form onSubmit={handleSubmit(onSubmit)}>
-            <Input
-                  autoFocus
-                  labelPlacement='outside'
-                  label="Name"
-                  placeholder="e.g Trade Kings"
-             
-                  {...register('name', { required: true })}
-                />
-
-                  <Input
-                  autoFocus
-                  labelPlacement='outside'
-                  label="Contact"
-                  placeholder="e.g 097 ******"
-                  {...register('contact', { required: true })}
-                  
-                />
-
-
-                  <Divider className='my-5'/>
-                <div className="buttonSection flex  justify-end gap-1">
-                  <Button 
-                
-                color="danger" variant="flat"  onPress={()=>{
-                  reset()
-                  onOpenChange()  
-                }}>
-                  Close
-                </Button>
-
-                <Button 
-                isLoading={isSubmitting}
-                type='submit'
-                color="primary" >
-                 Submit
-                </Button>
-            </div>
-            </form>     
-            </Model>
     </AdminLayout>
   );
 }

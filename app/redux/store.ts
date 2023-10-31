@@ -5,6 +5,7 @@ import  userSlice  from './slices/userSlice';
 import productSlice from './slices/productSlice';
 import supplierSlice from './slices/supplierSlice';
 import customerSlice from './slices/customerSlice';
+import invoicesSlice from './slices/invoiceSlice';
 
 const rootReducer = combineReducers({
     user: userSlice,
@@ -12,6 +13,7 @@ const rootReducer = combineReducers({
     products: productSlice,
     suppliers: supplierSlice,
     customers: customerSlice,
+    invoices: invoicesSlice,
      
 });
 

@@ -1,147 +1,98 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice,createAsyncThunk } from '@reduxjs/toolkit';
+import { collection, getDocs,doc,onSnapshot,getDoc,DocumentSnapshot, DocumentData,query,where } from "firebase/firestore"; 
+import { db } from '@/app/utils/firebase/firebase_initialization';
+
+
+export const fetchInvoice : any= createAsyncThunk('invoices/fetchAll', async (_, { dispatch, signal }) => {
+    return new Promise((resolve, reject) => {
+      const invoicesRef = collection(db, 'invoices');
+      let invoices : any = [];
+  
+      const unsubscribe = onSnapshot(invoicesRef, (querySnapshot) => {
+        const data = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        invoices = data;
+    
+        resolve(invoices);
+    
+      }, (error) => {
+ 
+        reject(error);
+      });
+  
+      if (signal.aborted) {
+        unsubscribe();
+      }
+    });
+  });
+
+
+  export const fetchDocumentById : any = createAsyncThunk(
+    'documents/fetchById',
+    async (Id, { rejectWithValue }) => {
+      try {
+ 
+        const q = query(collection(db, "invoices"), where("invoice_number", "==", Id));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot) {
+       
+          const data = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          return data;
+       
+        } else {       
+          return rejectWithValue('Invoice not found');
+        }
+      } catch (error: any) {
+        // Handle errors, e.g., network issues or permissions
+        return rejectWithValue(error.message);
+      }
+    }
+  );
+  
+
+const initialState = {
+    invoices: [],
+    invoiceById : [],
+    status: 'loading',
+    error: null
+}
 
 
 const invoiceSlice = createSlice({
-    name: "invoces",
-  
-    initialState: {
-      allInvoice: [],
-      filteredInvoice: [],
-      invoiceById: null,
-    },
-  
-    reducers: {
-      filterInvoice: (state : any, action :any) => {
-        const { allInvoice } = state;
-        if (action.payload.status === "") {
-          state.filteredInvoice = allInvoice;
-        } else {
-          const filteredData = allInvoice.filter((invoice : any) => {
-            return invoice.status === action.payload.status;
-          });
-          console.log(filteredData);
-          state.filteredInvoice = filteredData;
+    name: 'products',
+    initialState,
+    reducers: {},
+    extraReducers: (builder) => {       
+            builder.addCase(fetchInvoice.pending, (state  , action : any) => {
+                state.status = 'loading'
+            })
+            .addCase(fetchInvoice.fulfilled, (state, action :any) => {
+                state.status = 'succeeded'
+                state.invoices = action.payload
+            })
+            .addCase(fetchInvoice.rejected, (state, action) => {
+                state.status = 'failed'            
+            })
+            .addCase(fetchDocumentById.pending, (state  , action : any) => {
+                state.status = 'loading'
+            })
+            .addCase(fetchDocumentById.fulfilled, (state, action :any) => {
+                state.status = 'succeeded'
+                state.invoiceById = action.payload
+            })
+            .addCase(fetchDocumentById.rejected, (state, action) => {
+                state.status = 'failed'            
+            })
         }
-      },
-    //   getInvoiceById: (state, action) => {
-    //     const { allInvoice } = state;
-    //     const invoice = allInvoice.find((item) => item.id === action.payload.id);
-    //     state.invoiceById = invoice;
-    //   },
-    //   deleteInvoice: (state, action) => {
-    //     const { allInvoice } = state;
-    //     const index = allInvoice.findIndex(
-    //       (invoice) => invoice.id === action.payload.id
-    //     );
-    //     if (index !== -1) {
-    //       allInvoice.splice(index, 1);
-    //     }
-    //   },
-    //   updateInvoiceStatus: (state, action) => {
-    //     const { id, status } = action.payload;
-    //     const invoiceToUpdate = state.allInvoice.find(
-    //       (invoice) => invoice.id === id
-    //     );
-    //     if (invoiceToUpdate) {
-    //       invoiceToUpdate.status = status;
-    //     }
-    //   },
-      addInvoice: (state, action) => {
-        const {
-          description,
-          paymentTerms,
-          clientName,
-          clientEmail,
-          senderStreet,
-          senderCity,
-          senderPostCode,
-          senderCountry,
-          clientStreet,
-          clientCity,
-          clientPostCode,
-          clientCountry,
-          item,
-        } = action.payload;
-  
-        const finalData = {
-          id: '1',
-          createdAt: new Date().toISOString(),
-          paymentDue: new Date().toISOString(),
-          description: description,
-          paymentTerms: paymentTerms,
-          clientName: clientName,
-          clientEmail: clientEmail,
-          status: "pending",
-          senderAddress: {
-            street: senderStreet,
-            city: senderCity,
-            postCode: senderPostCode,
-            country: senderCountry,
-          },
-          clientAddress: {
-            street: clientStreet,
-            city: clientCity,
-            postCode: clientPostCode,
-            country: clientCountry,
-          },
-          items: item,
-          total: item.reduce((acc : any, i : any) => {
-            return acc + Number(i.total);
-          }, 0),
-        };
-        // state.allInvoice.push(finalData);
-      },
-    //   editInvoice: (state, action) => {
-    //     const { allInvoice } = state;
-    //     const {
-    //       description,
-    //       paymentTerms,
-    //       clientName,
-    //       clientEmail,
-    //       senderStreet,
-    //       senderCity,
-    //       senderPostCode,
-    //       senderCountry,
-    //       clientStreet,
-    //       clientCity,
-    //       clientPostCode,
-    //       clientCountry,
-    //       item,
-    //       id,
-    //     } = action.payload;
-  
-    //     const invoiceIndex = allInvoice.findIndex((invoice) => invoice.id === id);
-    //     const edittedObject = {
-    //       description: description,
-    //       paymentTerms: paymentTerms,
-    //       clientName: clientName,
-    //       clientEmail: clientEmail,
-    //       senderAddress: {
-    //         street: senderStreet,
-    //         city: senderCity,
-    //         postCode: senderPostCode,
-    //         country: senderCountry,
-    //       },
-    //       clientAddress: {
-    //         street: clientStreet,
-    //         city: clientCity,
-    //         postCode: clientPostCode,
-    //         country: clientCountry,
-    //       },
-    //       items: item,
-    //       total: item.reduce((acc, i) => {
-    //         return acc + Number(i.total);
-    //       }, 0),
-    //     };
-  
-    //     if (invoiceIndex !== -1) {
-    //       allInvoice[invoiceIndex] = {
-    //         ...allInvoice[invoiceIndex] ,
-    //         ...edittedObject
-    //       };
-    //     }
-    //   },
-    },
-  });
-  
-  export default invoiceSlice;
+        
+    })
+
+    export default invoiceSlice.reducer;
+
+ 
