@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React,{useEffect} from 'react'
 import {
     Table,
     TableHeader,
@@ -14,6 +14,9 @@ import {
     DropdownMenu,
     DropdownItem,
     Chip,
+    Spinner,
+    Divider,
+    useDisclosure,
     User,
     Pagination,
     Selection,
@@ -24,10 +27,16 @@ import { PlusIcon } from '../components/icons/PlusIcon';
 import { VerticalDotsIcon } from '../components/icons/VerticalDotsIcon';
 import { ChevronDownIcon } from '../components/icons/ChevronDownIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
-import { CustomerColumns,users, statusOptions } from '../utils/tableStructure/columns';
+import { customerColumns,users, statusOptions } from '../utils/tableStructure/columns';
 import { capitalize } from '../utils/text/capitalize';
 import AdminLayout from '../layout/AdminLayout';
-
+import Model from '../components/Model';
+import { toast } from 'react-toastify';
+import { useSelector,useDispatch } from 'react-redux';
+import { fetchCustomers } from '../redux/slices/customerSlice'; 
+import { useForm,  Controller, set,  } from 'react-hook-form';
+import { db } from '../utils/firebase/firebase_initialization';
+import { collection, addDoc } from "firebase/firestore";
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
     active: "success",
@@ -35,11 +44,19 @@ const statusColorMap: Record<string, ChipProps["color"]> = {
     vacation: "warning",
   };
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "role", "status", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["name", "contact", "actions"];
 
 type User = typeof users[0];
 
 function Page() {
+
+  const dispatch = useDispatch()
+  useEffect(()=>{
+    dispatch(fetchCustomers())
+  },[dispatch])
+
+  const {customers,status} = useSelector((state: any) => state.customers)
+  const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
@@ -56,27 +73,27 @@ function Page() {
   const hasSearchFilter = Boolean(filterValue);
 
   const headerColumns = React.useMemo(() => {
-    if (visibleColumns === "all") return CustomerColumns;
+    if (visibleColumns === "all") return customerColumns;
 
-    return CustomerColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+    return customerColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredUsers = [...users];
+    let filteredCustomers = [...customers];
 
     if (hasSearchFilter) {
-      filteredUsers = filteredUsers.filter((user) =>
-        user.name.toLowerCase().includes(filterValue.toLowerCase()),
+      filteredCustomers = filteredCustomers.filter((customer) =>
+        customer.name.toLowerCase().includes(filterValue.toLowerCase()),
       );
     }
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      filteredUsers = filteredUsers.filter((user) =>
-        Array.from(statusFilter).includes(user.status),
+      filteredCustomers = filteredCustomers.filter((customer) =>
+        Array.from(statusFilter).includes(customer.status),
       );
     }
 
-    return filteredUsers;
-  }, [users, filterValue, statusFilter]);
+    return filteredCustomers;
+  }, [customers, filterValue, statusFilter]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -97,33 +114,25 @@ function Page() {
     });
   }, [sortDescriptor, items]);
 
-  const renderCell = React.useCallback((user: User, columnKey: React.Key) => {
-    const cellValue = user[columnKey as keyof User];
+  const renderCell = React.useCallback((customer: any, columnKey: React.Key) => {
+    const cellValue = customer[columnKey as keyof any];
 
     switch (columnKey) {
       case "name":
         return (
-          <User
-            avatarProps={{radius: "lg", src: user.avatar}}
-            description={user.email}
-            name={cellValue}
-          >
-            {user.email}
-          </User>
+          <div className="flex flex-col">
+            <p className="text-bold text-small capitalize">{cellValue}</p>
+            {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.name}</p> */}
+          </div>
         );
-      case "role":
+      case "contact":
         return (
           <div className="flex flex-col">
             <p className="text-bold text-small capitalize">{cellValue}</p>
-            <p className="text-bold text-tiny capitalize text-default-400">{user.team}</p>
+            {/* <p className="text-bold text-tiny capitalize text-default-400">{customer.contact}</p> */}
           </div>
         );
-      case "status":
-        return (
-          <Chip className="capitalize" color={statusColorMap[user.status]} size="sm" variant="flat">
-            {cellValue}
-          </Chip>
-        );
+     
       case "actions":
         return (
           <div className="relative flex justify-end items-center gap-2">
@@ -191,7 +200,7 @@ function Page() {
             onValueChange={onSearchChange}
           />
           <div className="flex gap-3">
-            <Dropdown>
+            {/* <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
                   Status
@@ -211,7 +220,7 @@ function Page() {
                   </DropdownItem>
                 ))}
               </DropdownMenu>
-            </Dropdown>
+            </Dropdown> */}
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
@@ -226,14 +235,14 @@ function Page() {
                 selectionMode="multiple"
                 onSelectionChange={setVisibleColumns}
               >
-                {CustomerColumns.map((column) => (
+                {customerColumns.map((column) => (
                   <DropdownItem key={column.uid} className="capitalize">
                     {capitalize(column.name)}
                   </DropdownItem>
                 ))}
               </DropdownMenu>
             </Dropdown>
-            <Button color="primary" endContent={<PlusIcon />}>
+            <Button color="primary" endContent={<PlusIcon />} onPress={onOpen}>
               Add New
             </Button>
           </div>
@@ -293,10 +302,37 @@ function Page() {
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
+  const { register,reset, handleSubmit, getValues} = useForm<any>();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+
+  const onSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    console.log('data :',data);
+    try {
+      
+      const docRef = await addDoc(collection(db, "customers"), {
+        name: data.name,
+        contact: data.contact, // Corrected property name
+      }); 
+       
+      setIsSubmitting(false);
+      dispatch(fetchCustomers())
+      reset();
+      onOpenChange();
+      toast.success("Customer added successfully!");
+    } catch (error) {
+      setIsSubmitting(false);
+      console.error(error);
+      toast.error("Error adding Customer. Please try again later.");
+    }
+  };
+
+
   return (
     <AdminLayout>
     <Table
-      aria-label="Example table with custom cells, pagination and sorting"
+      aria-label="Customer Table"
       isHeaderSticky
       bottomContent={bottomContent}
       bottomContentPlacement="outside"
@@ -322,7 +358,7 @@ function Page() {
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
+      <TableBody isLoading={status=="loading"? true: false}   loadingContent={<Spinner label="Loading..." />} emptyContent={status === 'loading'? " " : sortedItems.length == 0 ? " No Customers Found": " "}  items={sortedItems}>
         {(item) => (
           <TableRow key={item.id}>
             {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -330,6 +366,49 @@ function Page() {
         )}
       </TableBody>
     </Table>
+
+
+    <Model onOpenChange={onOpenChange} isOpen={isOpen} title="Add Supplier" isSubmitting={isSubmitting}>                
+            <form onSubmit={handleSubmit(onSubmit)}>
+            <Input
+                  autoFocus
+                  labelPlacement='outside'
+                  label="Name"
+                  placeholder="e.g Trade Kings"
+             
+                  {...register('name', { required: true })}
+                />
+
+                  <Input
+                  autoFocus
+                  labelPlacement='outside'
+                  label="Contact"
+                  placeholder="e.g 097 ******"
+                  {...register('contact', { required: true })}
+                  
+                />
+
+
+                  <Divider className='my-5'/>
+                <div className="buttonSection flex  justify-end gap-1">
+                  <Button 
+                
+                color="danger" variant="flat"  onPress={()=>{
+                  reset()
+                  onOpenChange()  
+                }}>
+                  Close
+                </Button>
+
+                <Button 
+                isLoading={isSubmitting}
+                type='submit'
+                color="primary" >
+                 Submit
+                </Button>
+            </div>
+            </form>     
+            </Model>
     </AdminLayout>
   );
 }

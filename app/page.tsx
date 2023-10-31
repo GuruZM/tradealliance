@@ -115,7 +115,7 @@ export default function Home() {
           <div className="mt-6">
              
             <Button 
-            className='w-full px-6 py-3 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-gray-800 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-300 focus:ring-opacity-50'
+            className='w-full'
              type='submit'
             color="primary" isLoading={isSubmitting} >
               Sign In
@@ -123,9 +123,9 @@ export default function Home() {
           </div>
           </form>
           <div className="flex items-center justify-center mt-4">
-            <p className='text-sm'>
-              Crafted By Resonantt 😎
-            </p>
+            <small className='text-sm opacity-40' >
+              Crafted By Resonantt 
+            </small>
           </div>
         </div>
       </div>

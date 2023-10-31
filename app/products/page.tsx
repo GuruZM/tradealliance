@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React,{useEffect} from 'react'
 import AdminLayout from '../layout/AdminLayout'
 
 import {
@@ -19,15 +19,27 @@ import {
     User,
     Pagination,
     Selection,
+    useDisclosure,
+    Divider,
+    Spinner,
     ChipProps,
-    SortDescriptor
+    SortDescriptor,
+    Select, SelectItem
   } from "@nextui-org/react";
   import { PlusIcon } from '../components/icons/PlusIcon';
   import { VerticalDotsIcon } from '../components/icons/VerticalDotsIcon';
   import { ChevronDownIcon } from '../components/icons/ChevronDownIcon';
   import { SearchIcon } from '../components/icons/SearchIcon';
-  import { CustomerColumns,users, statusOptions } from '../utils/tableStructure/columns';
+  import {productColumns,users, statusOptions } from '../utils/tableStructure/columns';
   import { capitalize } from '../utils/text/capitalize';
+  import Model from '../components/Model';
+  import { useForm,  Controller, set,  } from 'react-hook-form';
+  import { db } from '../utils/firebase/firebase_initialization';
+  import { collection, addDoc } from "firebase/firestore"; 
+  import { toast } from 'react-toastify';
+  import { useSelector,useDispatch } from 'react-redux';
+  import { fetchCategories } from '../redux/slices/categorySlice';
+  import { fetchProducts } from '../redux/slices/productSlice';
   
   const statusColorMap: Record<string, ChipProps["color"]> = {
     active: "success",
@@ -35,13 +47,14 @@ import {
     vacation: "warning",
   };
   
-  const INITIAL_VISIBLE_COLUMNS = ["name", "role", "status", "actions"];
+  const INITIAL_VISIBLE_COLUMNS = ["name", "category", "supplier","description", "base_price","actions"];
   
-  type User = typeof users[0];
+  // type User = typeof users[0];
 
 
 function Page() {
 
+  const {isOpen, onOpen, onOpenChange} = useDisclosure();
     const [filterValue, setFilterValue] = React.useState("");
     const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
     const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -51,33 +64,42 @@ function Page() {
       column: "age",
       direction: "ascending",
     });
+
+    const dispatch = useDispatch()
+    const {categories} = useSelector((state:any)=>state.categories)
+    const { status, products } = useSelector((state:any)=>state.products)
+
+    useEffect(() => {
+      dispatch(fetchCategories())
+      dispatch(fetchProducts())
+    }, [])
   
     const [page, setPage] = React.useState(1);
   
     const hasSearchFilter = Boolean(filterValue);
   
     const headerColumns = React.useMemo(() => {
-      if (visibleColumns === "all") return CustomerColumns;
+      if (visibleColumns === "all") return productColumns;
   
-      return CustomerColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+      return productColumns.filter((column) => Array.from(visibleColumns).includes(column.uid));
     }, [visibleColumns]);
   
     const filteredItems = React.useMemo(() => {
-      let filteredUsers = [...users];
+      let filteredProducts = [...products];
   
       if (hasSearchFilter) {
-        filteredUsers = filteredUsers.filter((user) =>
-          user.name.toLowerCase().includes(filterValue.toLowerCase()),
+        filteredProducts = filteredProducts.filter((product) =>
+          product.name.toLowerCase().includes(filterValue.toLowerCase()),
         );
       }
       if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-        filteredUsers = filteredUsers.filter((user) =>
-          Array.from(statusFilter).includes(user.status),
+        filteredProducts = filteredProducts.filter((product) =>
+          Array.from(statusFilter).includes(product.status),
         );
       }
   
-      return filteredUsers;
-    }, [users, filterValue, statusFilter]);
+      return filteredProducts;
+    }, [products, filterValue, statusFilter]);
   
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
   
@@ -89,41 +111,53 @@ function Page() {
     }, [page, filteredItems, rowsPerPage]);
   
     const sortedItems = React.useMemo(() => {
-      return [...items].sort((a: User, b: User) => {
-        const first = a[sortDescriptor.column as keyof User] as number;
-        const second = b[sortDescriptor.column as keyof User] as number;
+      return [...items].sort((a: any, b: any) => {
+        const first = a[sortDescriptor.column as keyof any] as number;
+        const second = b[sortDescriptor.column as keyof any] as number;
         const cmp = first < second ? -1 : first > second ? 1 : 0;
   
         return sortDescriptor.direction === "descending" ? -cmp : cmp;
       });
     }, [sortDescriptor, items]);
   
-    const renderCell = React.useCallback((user: User, columnKey: React.Key) => {
-      const cellValue = user[columnKey as keyof User];
+    const renderCell = React.useCallback((product: any, columnKey: React.Key) => {
+      const cellValue = product[columnKey as keyof any];
   
       switch (columnKey) {
         case "name":
           return (
-            <User
-              avatarProps={{radius: "lg", src: user.avatar}}
-              description={user.email}
-              name={cellValue}
-            >
-              {user.email}
-            </User>
+            <div className="flex flex-col">
+            {/* <p className="text-bold text-small capitalize">{cellValue}</p> */}
+            <p className="text-bold text-tiny capitalize text-default-400">{product.name}</p>
+          </div>
           );
-        case "role":
+          case "description":
+            return (
+              <div className="flex flex-col">
+              {/* <p className="text-bold text-small capitalize">{cellValue}</p> */}
+              <p className="text-bold text-tiny capitalize text-default-400">{product.description}</p>
+            </div>
+            );
+        case "category":
           return (
             <div className="flex flex-col">
-              <p className="text-bold text-small capitalize">{cellValue}</p>
-              <p className="text-bold text-tiny capitalize text-default-400">{user.team}</p>
+              {/* <p className="text-bold text-small capitalize">{cellValue}</p> */}
+              <p className="text-bold text-tiny capitalize text-default-400">{product.category}</p>
             </div>
           );
-        case "status":
+        case "supplier":
           return (
-            <Chip className="capitalize" color={statusColorMap[user.status]} size="sm" variant="flat">
-              {cellValue}
-            </Chip>
+            <div className="flex flex-col">
+            {/* <p className="text-bold text-small capitalize">{cellValue}</p> */}
+            <p className="text-bold text-tiny capitalize text-default-400">{product.supplier}</p>
+          </div>
+          );
+          case "base_price":
+          return (
+            <div className="flex flex-col">
+            {/* <p className="text-bold text-small capitalize">{cellValue}</p> */}
+            <p className="text-bold text-tiny capitalize text-default-400">K{product.base_price}</p>
+          </div>
           );
         case "actions":
           return (
@@ -192,7 +226,7 @@ function Page() {
               onValueChange={onSearchChange}
             />
             <div className="flex gap-3">
-              <Dropdown>
+              {/* <Dropdown>
                 <DropdownTrigger className="hidden sm:flex">
                   <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
                     Status
@@ -212,7 +246,7 @@ function Page() {
                     </DropdownItem>
                   ))}
                 </DropdownMenu>
-              </Dropdown>
+              </Dropdown> */}
               <Dropdown>
                 <DropdownTrigger className="hidden sm:flex">
                   <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
@@ -227,20 +261,20 @@ function Page() {
                   selectionMode="multiple"
                   onSelectionChange={setVisibleColumns}
                 >
-                  {CustomerColumns.map((column) => (
+                  {productColumns.map((column) => (
                     <DropdownItem key={column.uid} className="capitalize">
                       {capitalize(column.name)}
                     </DropdownItem>
                   ))}
                 </DropdownMenu>
               </Dropdown>
-              <Button color="primary" endContent={<PlusIcon />}>
+              <Button color="primary" endContent={<PlusIcon />}  onPress={onOpen}>
                 Add New
               </Button>
             </div>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-default-400 text-small">Total {users.length} users</span>
+            <span className="text-default-400 text-small">Total {products.length} users</span>
             <label className="flex items-center text-default-400 text-small">
               Rows per page:
               <select
@@ -261,7 +295,7 @@ function Page() {
       visibleColumns,
       onSearchChange,
       onRowsPerPageChange,
-      users.length,
+      products.length,
       hasSearchFilter,
     ]);
   
@@ -293,7 +327,47 @@ function Page() {
         </div>
       );
     }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
-  return (
+ 
+    type productType = {
+      name: string;
+      category: string;
+      supplier: string;
+      base_price: number;
+      description: string;
+    };
+ 
+    const { register,reset, handleSubmit, getValues} = useForm<productType>();
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+     
+  const onSubmit = async (data: productType) => {
+    setIsSubmitting(true);
+    console.log('data :',data);
+    try {
+      
+      const docRef = await addDoc(collection(db, "products"), {
+        name: data.name,
+        category: data.category, // Corrected property name
+        supplier: data.supplier, // Corrected property name
+        base_price: data.base_price, // Corrected property name
+        description: data.description,
+      }); 
+       
+      setIsSubmitting(false);
+      dispatch(fetchProducts())
+      reset();
+      onOpenChange();
+      toast.success("Product added successfully!");
+    } catch (error) {
+      setIsSubmitting(false);
+      console.error(error);
+      toast.error("Error adding product. Please try again later.");
+    }
+  };
+
+
+
+ 
+    return (
    <AdminLayout>
 <Table
       aria-label="Example table with custom cells, pagination and sorting"
@@ -322,7 +396,7 @@ function Page() {
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
+      <TableBody isLoading={status=="loading"? true: false}   loadingContent={<Spinner label="Loading..." />} emptyContent={status === 'loading'? " " : sortedItems.length == 0 ? " No Products Found": " "} items={sortedItems}>
         {(item) => (
           <TableRow key={item.id}>
             {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -330,7 +404,86 @@ function Page() {
         )}
       </TableBody>
     </Table>
+    <Model onOpenChange={onOpenChange} isOpen={isOpen} title="Add Product" isSubmitting={isSubmitting}>                
+            <form onSubmit={handleSubmit(onSubmit)}>
+            <Input
+                  autoFocus
+                  labelPlacement='outside'
+                  label="Name"
+                  placeholder="e.g "
+             
+                  {...register('name', { required: true })}
+                />
 
+                  <Input
+                  autoFocus
+                  labelPlacement='outside'
+                  label="Description"
+                  placeholder="e.g 300ml vatra bottle"
+             
+                  {...register('description', { required: true })}
+                />
+
+                  
+              <Select
+              labelPlacement="outside"
+              label="Category"
+              className="w-full my-3"
+              placeholder="Select Category"
+              {...register('category', { required: true })}
+            >
+              {categories.map((category : any) => (
+                <SelectItem key={category.name} value={category.name}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </Select>
+
+            <Select
+              labelPlacement="outside"
+              label="Supplier"
+              className="w-full my-3"
+              placeholder="Select Supplier"
+              {...register('supplier', { required: true })}
+            >
+             
+                <SelectItem key="tradekings">
+                  Tradekings
+                </SelectItem>
+               
+            </Select>
+
+            <Input
+                  autoFocus
+                  labelPlacement='outside'
+                  label="Base Price"
+                  placeholder="e.g 100"
+             
+                  {...register('base_price', { required: true })}
+                  startContent={<span className="text-default-400 text-small">K</span>}
+                />
+
+
+                  <Divider className='my-5'/>
+                <div className="buttonSection flex  justify-end gap-1">
+                  <Button 
+                
+                color="danger" variant="flat"  onPress={()=>{
+                  reset()
+                  onOpenChange()  
+                }}>
+                  Close
+                </Button>
+
+                <Button 
+                isLoading={isSubmitting}
+                type='submit'
+                color="primary" >
+                 Submit
+                </Button>
+            </div>
+            </form>     
+            </Model>
    </AdminLayout>
   )
 }

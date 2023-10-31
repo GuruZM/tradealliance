@@ -8,10 +8,11 @@ type ModalProps = {
     isSubmitting?: boolean;
     children: React.ReactNode;
     buttonSection?: React.ReactNode;
+    title: string;
 }
 
 
-function Model({ isOpen, onOpenChange, children,isSubmitting,buttonSection} : ModalProps) {
+function Model({ isOpen, onOpenChange, children,isSubmitting,buttonSection,title} : ModalProps) {
   return (
     <>
     <Modal 
@@ -22,7 +23,7 @@ function Model({ isOpen, onOpenChange, children,isSubmitting,buttonSection} : Mo
    <ModalContent>
     {(onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1">Create Category</ModalHeader>
+        <ModalHeader className="flex flex-col gap-1">{title}</ModalHeader>
         <Divider />
         <ModalBody >
             {children}

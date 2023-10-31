@@ -58,7 +58,7 @@ export default function AdminNavbar({ showSidebar, setShowSidebar } : SidebarPro
             as="button"
             avatarProps={{
               isBordered: true,
-              src: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
+              
             }}
             className="transition-transform"
             description={auth.currentUser && auth.currentUser.email}

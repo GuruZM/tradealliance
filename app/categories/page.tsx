@@ -130,13 +130,10 @@ function Page() {
     switch (columnKey) {
       case "name":
         return (
-          <User
-            avatarProps={{radius: "lg", src: category.avatar}}
-            description={category.email}
-            name={cellValue}
-          >
-            {category.email}
-          </User>
+          <div className="flex flex-col">
+          <p className="text-bold text-small capitalize">{cellValue}</p>
+          {/* <p className="text-bold text-tiny capitalize text-default-400">{supplier.team}</p> */}
+        </div>
         );
     
       case "actions":
@@ -385,7 +382,7 @@ function Page() {
     </Table>
           {/* model */}
 
-            <Model onOpenChange={onOpenChange} isOpen={isOpen} isSubmitting={isSubmitting}>                
+            <Model onOpenChange={onOpenChange} isOpen={isOpen} title="Create Category" isSubmitting={isSubmitting}>                
             <form onSubmit={handleSubmit(onSubmit)}>
             <Input
                   autoFocus
