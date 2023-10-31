@@ -169,7 +169,7 @@ const onSubmit = async (data : any) => {
           <div className=" grid grid-cols-2   gap-3   ">
           <div className=" mx-1  flex flex-col ">
             <Input
-              key=""
+              key="invoiceNumber"
               type="text"
               label="Invoice No#"
               labelPlacement="outside"
@@ -201,7 +201,7 @@ const onSubmit = async (data : any) => {
           <div className=" flex justify-center space-x-5 items-center mt-8 ">
             <div className=" flex-1  ">
               <Input
-                key=""
+                key="date"
                 type="date"
                 label="Invoice Date"
                 labelPlacement="outside"
@@ -230,7 +230,7 @@ const onSubmit = async (data : any) => {
 
           <div className=" mx-1 mt-4 flex flex-col ">
             <Input
-              key=""
+              key="transport"
               type="text"
               label="Transport Amount"
               labelPlacement="outside"
@@ -267,7 +267,7 @@ const onSubmit = async (data : any) => {
 
        
             <Input
-              key=""
+              key="invoiceTotal"
               type="text"
               label="Invoice Total"
               labelPlacement="outside"
