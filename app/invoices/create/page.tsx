@@ -13,7 +13,7 @@ import { collection, addDoc } from "firebase/firestore";
 import { toast } from 'react-toastify';
 import { db } from "@/app/utils/firebase/firebase_initialization";
 
-function create() {
+function Create() {
   const dispatch = useDispatch();
 
   const type = "create";
@@ -322,4 +322,4 @@ const onSubmit = async (data : any) => {
   );
 }
 
-export default create;
+export default Create;
