@@ -108,7 +108,6 @@ const onSubmit = async (data : any) => {
       }); 
        
       setIsSubmitting(false);
-    //   dispatch(fetchProducts())
       reset();
       toast.success("Invoice Created Successfully!");
     } catch (error) {
@@ -247,7 +246,9 @@ const onSubmit = async (data : any) => {
          <Divider className="my-5"/>
 
           {fields.map(({id}, index) => (
-            <div className=" border-b pb-2 border-gray-300 mb-4 ">
+            <div 
+            key={index}
+            className=" border-b pb-2 border-gray-300 mb-4 ">
               <InvoiceField
                 handleRemove={handleRemove}
                 handlePriceChange={handlePriceChange}
