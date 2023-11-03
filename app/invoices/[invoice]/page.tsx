@@ -41,14 +41,14 @@ function Page  ({params} : pageProps) {
                             <h1 className=' text-gray-600 font-medium dark:text-gray-400'>
                                 Status
                             </h1>
-                            <PaidStatus type={invoiceById[0].status}/>
+                            
                         </div>
                         <div className=' md:block hidden space-x-3'>
                             {/* <Button   >Edit</Button> */}
-                            <Button color='danger'>Delete</Button>
+                           {/* <Button color='danger'>Delete</Button>
                              {
                                 invoiceById[0].status === 'pending' && <Button color='primary'>Mark as Paid</Button>
-                             }
+                             }*/}
                             
                            
 
