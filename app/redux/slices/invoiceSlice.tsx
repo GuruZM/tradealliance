@@ -58,7 +58,7 @@ export const fetchInvoice : any= createAsyncThunk('invoices/fetchAll', async (_,
 
 const initialState = {
     invoices: [],
-    invoiceById : [],
+    invoiceById : [] ,
     status: 'loading',
     error: null
 }
