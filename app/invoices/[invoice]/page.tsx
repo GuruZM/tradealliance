@@ -147,7 +147,7 @@ function Page  ({params} : pageProps) {
                             </h3>
 
                             <h1 className=' text-3xl'>
-                              K{invoiceById[0].invoice_total}
+                              {/* K{invoiceById[0].invoice_total} */}
                             </h1>
 
                         </div>
